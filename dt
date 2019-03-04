@@ -1,0 +1,157 @@
+#!/bin/bash
+
+DockerHome=/projects
+DTUNHome=/opt/dt
+DockerComposeHome=$DTUNHome/data
+ListenIP=127.0.33.
+DTUNID=DTUN
+
+env=$1
+cmd=$2
+
+if [ -z $cmd ]; then
+    cmd=$1
+fi;
+
+findIp()
+{
+    min=1;
+    lines=`netstat -an|grep -P "$ListenIP?:80"|grep LISTEN|awk '{split($4, r, ":"); split(r[1], r, "."); print r[4]}'|sort -n`
+    while read number; do
+	if [ -n "$number" ]; then
+	    if [ $number -eq $min ]; then
+		min=$(($number + 1))
+	    fi;
+	fi;
+    done <<< "$lines"
+    echo ${ListenIP}${min}
+}
+# Generates .env file
+generateEnvFile()
+{
+    name=$1
+    ip=$(findIp)
+    envFile=$DockerComposeHome/$name/.env
+    echo "PROJECT_NAME=$name">$envFile
+    echo "LISTEN_IP=$ip">>$envFile
+    echo "MAGENTO_MODE=developer">>$envFile
+    echo "MYSQL_ROOT_PASSWORD=root">>$envFile
+    echo "MYSQL_DATABASE=magento2">>$envFile
+}
+# Generates MYSQL Config
+generateMysqlConfig()
+{
+    name=$1
+    version=$2
+    export MYSQL_VERSION=$version && cat $DTUNHome/config/mysql/Dockerfile|envsubst>$DockerComposeHome/$name/config/mysql/Dockerfile
+    cp $DTUNHome/config/mysql/base.yml $DockerComposeHome/$name/config/mysql/base.yml
+}
+# Generates PHP Config
+generatePhpConfig()
+{
+    name=$1
+    dphpVersion=$2
+    gitEmail=$(git config --global user.email)
+    gitName=$(git config --global user.name)
+    export GIT_EMAIL=$gitEmail GIT_NAME=$gitName PHP_VERSION=$dphpVersion && cat $DTUNHome/config/php/Dockerfile|envsubst>$DockerComposeHome/$name/config/php/Dockerfile
+    cp $DTUNHome/config/php/base.yml $DockerComposeHome/$name/config/php/base.yml
+}
+
+initializeDockerComposer()
+{
+    if [ -d $DockerHome/$1 ]; then
+	echo "Initializing docker environment for $DockerHome/$1 in $DockerComposeHome..."
+	mkdir -p $DockerComposeHome/$1/data/mysql $DockerComposeHome/$1/config $DockerComposeHome/$1/config/php $DockerComposeHome/$1/config/mysql
+	ln -f -s $DockerHome/$1 $DockerComposeHome/$1/data/html
+	generatePhpConfig $1 7.1
+	generateMysqlConfig $1 5.6
+	cat $DTUNHome/config/docker-compose.yml|envsubst>$DockerComposeHome/$1/docker-compose.yml
+    else
+	echo "FATAL: $DockerHome/$1 not found"
+    fi;
+}
+
+startDockerEnvironment()
+{
+    echo "Starting $1..."
+    generateEnvFile $1
+    cd $DockerComposeHome/$1 && screen -dmS $1 docker-compose up --build
+}
+
+stopDockerEnvironment()
+{
+    cd $DockerComposeHome/$1 && docker-compose down
+}
+
+generateHostsFile()
+{
+    sed '/'${DTUNID}'HostsStart/q' /etc/hosts
+    generateHostsFileInsertion
+    awk '/'${DTUNID}'HostsEnd/,EOF' /etc/hosts
+}
+
+generateHostsFileInsertion()
+{
+    cmd="docker ps --format '{{.Ports}} {{.Names}}'|grep web|awk 'BEGIN {ORS=\" \"}; {c=split(\$0, s); for(n=1; n<=c; n++) { if ((s[n] ~ \"$ListenIP*\") || (s[n] ~ \"web\")) print s[n]}; print \"\\n\"};'"
+    list=$(eval $cmd)
+    while read entry; do
+	if [ -n "$entry" ]; then
+	    ip=$(echo $entry|awk 'BEGIN {ORS=""}; {split($1, r, ":"); print r[1];};')
+	    name=$(echo $entry|awk 'BEGIN {ORS=""}; {split($2, r, "-web"); print r[1];};')
+# '
+	    echo "# DT $name"
+	    echo -e "$ip\t$name.loc"
+	    echo -e "$ip\tdc.$name.loc"
+	    if [ -e "$DockerComposeHome/$name/config/php/aliases" ]; then
+		while read line; do
+		    echo -e "$ip\t$line"
+		done < "$DockerComposeHome/$name/config/php/aliases"
+	    fi;
+	    echo "# /DT $name"
+#'	    echo $entry|awk 'BEGIN {ORS=""}; {split($1, r, ":"); print r[1]; print "\tdc."; split($2, r, "-web"); print r[1]; print ".loc\n"};'
+	fi;
+    done <<< "$list"
+}
+# Executes application on container
+executeApp()
+{
+    env=$1
+    cnt=$2
+    chdir=$3
+    shift 3
+    app=$@
+    cid="docker ps --format {{.ID}} --filter name=$env-$cnt"
+    cid=$($cid)
+    docker exec --workdir $chdir --user $(id -u) -ti $cid $app
+}
+
+case "$cmd" in
+    rl)
+	generateHostsFile > /tmp/hosts
+	cp /tmp/hosts /etc/hosts
+    ;;
+    mysql)
+	executeApp $env mysql /var/lib/mysql mysql -u root -proot magento2
+    ;;
+    bash)
+	executeApp $env web /app bash
+    ;;
+    mc)
+	executeApp $env web /app mc
+    ;;
+    m2)
+	executeApp $env web /app php bin/magento
+    ;;
+    up)
+	executeApp $env web /app php bin/magento setup:upgrade
+    ;;
+    init)
+	initializeDockerComposer $env
+    ;;
+    start)
+	startDockerEnvironment $env
+    ;;
+    stop)
+	stopDockerEnvironment $env
+    ;;
+esac;

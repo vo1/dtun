@@ -1,0 +1,12 @@
+version: '2'
+services:
+  db:
+    extends:
+      file: config/mysql/base.yml
+      service: db
+  web:
+    extends:
+      file: config/php/base.yml
+      service: web
+    links:
+      - db
