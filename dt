@@ -54,7 +54,7 @@ generatePhpConfig()
     export PHP_VERSION=$dphpVersion && cat $DTUNHome/config/php/Dockerfile|envsubst>$DockerComposeHome/$name/config/php/Dockerfile
     cp $DTUNHome/config/php/base.yml $DockerComposeHome/$name/config/php/base.yml
 }
-
+# Initializes docker environment
 initializeDockerComposer()
 {
     if [ -d $DockerHome/$1 ]; then
@@ -68,26 +68,26 @@ initializeDockerComposer()
 	echo "FATAL: $DockerHome/$1 not found"
     fi;
 }
-
+# Starts docker environment
 startDockerEnvironment()
 {
     echo "Starting $1..."
     generateEnvFile $1
     cd $DockerComposeHome/$1 && screen -dmS $1 docker-compose up --build
 }
-
+# Stops docker environment
 stopDockerEnvironment()
 {
     cd $DockerComposeHome/$1 && docker-compose down
 }
-
+# Generates hosts file
 generateHostsFile()
 {
     sed '/'${DTUNID}'HostsStart/q' /etc/hosts
     generateHostsFileInsertion
     awk '/'${DTUNID}'HostsEnd/,EOF' /etc/hosts
 }
-
+# Generates hosts list
 generateHostsFileInsertion()
 {
     cmd="docker ps --format '{{.Ports}} {{.Names}}'|grep web|awk 'BEGIN {ORS=\" \"}; {c=split(\$0, s); for(n=1; n<=c; n++) { if ((s[n] ~ \"$ListenIP*\") || (s[n] ~ \"web\")) print s[n]}; print \"\\n\"};'"
@@ -126,7 +126,7 @@ executeApp()
 case "$cmd" in
     rl)
 	generateHostsFile > /tmp/hosts
-	cp /tmp/hosts /etc/hosts
+	cp --no-preserve=mode,ownership /tmp/hosts /etc/hosts
     ;;
     mysql)
 	executeApp $env mysql /var/lib/mysql mysql -u root -proot magento2
