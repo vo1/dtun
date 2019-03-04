@@ -12,6 +12,9 @@ Adjusts paths in dt executable file to point to your projects dir and to install
 (default /opt/dt and /projects)
 
 ## Usage
+
 **dt init projectname** - initializes docker project in $DTUNHome/data
+
 **dt start projectname** - starts it
+
 **dt rl** - reloads hosts file with running DTUN images
