@@ -51,9 +51,7 @@ generatePhpConfig()
 {
     name=$1
     dphpVersion=$2
-    gitEmail=$(git config --global user.email)
-    gitName=$(git config --global user.name)
-    export GIT_EMAIL=$gitEmail GIT_NAME=$gitName PHP_VERSION=$dphpVersion && cat $DTUNHome/config/php/Dockerfile|envsubst>$DockerComposeHome/$name/config/php/Dockerfile
+    export PHP_VERSION=$dphpVersion && cat $DTUNHome/config/php/Dockerfile|envsubst>$DockerComposeHome/$name/config/php/Dockerfile
     cp $DTUNHome/config/php/base.yml $DockerComposeHome/$name/config/php/base.yml
 }
 
