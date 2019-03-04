@@ -1,4 +1,4 @@
-# DTUN docker tunneler for Magento2
+# DTUN docker template builder for Magento2
 
 ## Installation
 Clone repo anywhere, e.g. /opt/dt, symlink dt executable somewhere in PATH
