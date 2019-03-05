@@ -10,12 +10,9 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - PHP_DEBUGGER=xdebug
-      - PHP_MEMORY_LIMIT=-1
-      - MAGENTO_MODE=${MAGENTO_MODE}
+      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_GROUP=www-data
     volumes:
-      - ../../data/html:/app
-      - $HOME/.ssh/id_rsa:/root/.ssh/id_rsa
-      - $HOME/.gitconfig:/root/.gitconfig
-      - $HOME/.ssh/id_rsa:/home/application/.ssh/id_rsa
-      - $HOME/.gitconfig:/home/application/.gitconfig
+      - ../../data/html:/var/www/html
+      - $HOME/.ssh/id_rsa:/var/www/.ssh/id_rsa
+      - $HOME/.gitconfig:/var/www/.gitconfig

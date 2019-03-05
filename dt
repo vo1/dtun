@@ -6,6 +6,10 @@ DockerComposeHome=$DTUNHome/data
 ListenIP=127.0.33.
 DTUNID=DTUN
 
+ExternalInterface=eth0
+UseApacheReverseProxy=1
+
+ExternalIp=`ip -br -4 addr show $ExternalInterface|awk '{ split(\$3, m, "/"); print m[1] }'`
 env=$1
 cmd=$2
 
@@ -120,11 +124,15 @@ executeApp()
     cid=$($cid)
     docker exec --workdir $chdir --user $(id -u) -ti $cid $app
 }
-# CMD switch
+# CMD switch '
 case "$cmd" in
     rl)
 	generateHostsFile > /tmp/hosts
-	cp --no-preserve=mode,ownership /tmp/hosts /etc/hosts
+	cp --preserve=mode,ownership /tmp/hosts /etc/hosts
+	if [ $UseApacheReverseProxy -eq 1 ]; then
+	    echo Reverse proxy reconfiguration to $ExternalIp
+	    echo Listen $ExternalIp:80 >/etc/apache2/ports.conf
+	fi;
     ;;
     mysql)
 	executeApp $env mysql /var/lib/mysql mysql -u root -proot magento2
