@@ -85,7 +85,9 @@ initializeDockerComposer()
     if [ -d $DockerHome/$envName ]; then
 	echo "Initializing docker environment for $DockerHome/$envName in $DockerComposeHome..."
 	mkdir -p $DockerComposeHome/$envName/data/mysql $DockerComposeHome/$envName/config $DockerComposeHome/$envName/config/php $DockerComposeHome/$envName/config/mysql
-	ln -f -s $DockerHome/$envName $DockerComposeHome/$envName/data/html
+	if [ ! -e $DockerComposeHome/$envName/data/html ]; then
+	    ln -f -s $DockerHome/$envName $DockerComposeHome/$envName/data/html
+	fi;
 	generatePhpConfig $envName $ver_php
 	generateMysqlConfig $envName $ver_mysql
 	cat $DTUNHome/config/docker-compose.yml|envsubst>$DockerComposeHome/$envName/docker-compose.yml
@@ -173,6 +175,9 @@ case "$cmd" in
 		echo -e "\n# DTSudoersStart\n%docker ALL=NOPASSWD:/sbin/service apache2 reload\n%docker ALL=NOPASSWD:/usr/sbin/a2ensite \n# DTSudoersEnd\n">> /etc/sudoers
 	    fi;
 	fi; 
+    ;;
+    ddir)
+	echo $DockerComposeHome/$env
     ;;
     rl)
 	generateHostsFile > /tmp/hosts
