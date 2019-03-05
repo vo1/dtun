@@ -87,9 +87,9 @@ stopDockerEnvironment()
 # Generates hosts file
 generateHostsFile()
 {
-    sed '/'${DTUNID}'HostsStart/q' /etc/hosts
+    sed '/DTUNHostsStart/q' /etc/hosts
     generateHostsFileInsertion
-    awk '/'${DTUNID}'HostsEnd/,EOF' /etc/hosts
+    awk '/DTUNHostsEnd/,EOF' /etc/hosts
 }
 # Generates hosts list
 generateHostsFileInsertion()
@@ -112,6 +112,17 @@ generateHostsFileInsertion()
 	fi;
     done <<< "$list"
 }
+#' Generates VHosts for reverse proxy
+generateVHosts()
+{
+    cmd="docker ps --format '{{.Names}}'|grep web"
+    list=$(eval $cmd)
+    while read entry; do
+	name=`echo $entry|awk '{split($1, m, "-web"); print m[1]; }'`
+	export ENV_NAME=$name && cat $DTUNHome/config/php/vhost.conf|envsubst > /etc/apache2/sites-available/$name.conf
+	sudo /usr/sbin/a2ensite $name
+    done <<< "$list"
+}
 # Executes application on container
 executeApp()
 {
@@ -124,14 +135,32 @@ executeApp()
     cid=$($cid)
     docker exec --workdir $chdir --user $(id -u) -ti $cid $app
 }
-# CMD switch '
+# CMD switch
 case "$cmd" in
+    dt-setup)
+	chown :docker /etc/hosts
+	chmod g=rw /etc/hosts
+	added=`cat /etc/hosts|grep DTUNHostsStart`
+	if [ -z "$added" ]; then
+	    echo -e "\n# DTUNHostsStart\n# DTUNHostsEnd\n" >> /etc/hosts
+	fi;
+	if [ $UseApacheReverseProxy -eq 1 ]; then
+	    chown :docker /etc/apache2/sites-available /etc/apache2/ports.conf
+	    chmod g=rwX /etc/apache2/sites-available /etc/apache2/ports.conf
+	    added=`cat /etc/sudoers|grep -e "%docker.*NOPASSWD.*apache2"`
+	    if [ -z "$added" ]; then
+		echo -e "\n# DTSudoersStart\n%docker ALL=NOPASSWD:/sbin/service apache2 reload\n%docker ALL=NOPASSWD:/usr/sbin/a2ensite \n# DTSudoersEnd\n">> /etc/sudoers
+	    fi;
+	fi; 
+    ;;
     rl)
 	generateHostsFile > /tmp/hosts
 	cp --preserve=mode,ownership /tmp/hosts /etc/hosts
 	if [ $UseApacheReverseProxy -eq 1 ]; then
 	    echo Reverse proxy reconfiguration to $ExternalIp
 	    echo Listen $ExternalIp:80 >/etc/apache2/ports.conf
+	    generateVHosts
+	    sudo service apache2 reload && echo Reloaded Apache2
 	fi;
     ;;
     mysql)
