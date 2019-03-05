@@ -1,7 +1,7 @@
 version: '2'
 services:
   db:
-    container_name: ${PROJECT_NAME}-mysql
+    container_name: ${PROJECT_NAME}-db
     build:
       context: .
       dockerfile: Dockerfile
