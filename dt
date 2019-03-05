@@ -1,13 +1,24 @@
 #!/bin/bash
 
+ListenIP=127.0.33.
 DockerHome=/projects
 DTUNHome=/opt/dt
 DockerComposeHome=$DTUNHome/data
-ListenIP=127.0.33.
-DTUNID=DTUN
-
+UseApacheReverseProxy=0
 ExternalInterface=eth0
-UseApacheReverseProxy=1
+
+if [ -n "$DTUN_HOME" ];then
+    DTUNHome=$DTUN_HOME
+fi;
+if [ -n "$DTUN_PROJECTS" ]; then
+    DockerHome=$DTUN_PROJECTS
+fi;
+if [ -n "$DTUN_USE_REVERSE_PROXY" ]; then
+    UseApacheReverseProxy=$DTUN_USE_REVERSE_PROXY
+fi;
+if [ -n "$DTUN_EXT_INTERFACE" ]; then
+    ExternalInterface=$DTUN_EXT_INTERFACE
+fi;
 
 ExternalIp=`ip -br -4 addr show $ExternalInterface|awk '{ split(\$3, m, "/"); print m[1] }'`
 env=$1
@@ -167,7 +178,7 @@ case "$cmd" in
 	if [ -z "$added" ]; then
 	    echo -e "\n# DTUNHostsStart\n# DTUNHostsEnd\n" >> /etc/hosts
 	fi;
-	if [ $UseApacheReverseProxy -eq 1 ]; then
+	if [ -d /etc/apache2 ]; then
 	    chown :docker /etc/apache2/sites-available /etc/apache2/ports.conf
 	    chmod g=rwX /etc/apache2/sites-available /etc/apache2/ports.conf
 	    added=`cat /etc/sudoers|grep -e "%docker.*NOPASSWD.*apache2"`

@@ -4,12 +4,16 @@
 Clone repo anywhere, e.g. /opt/dt, symlink dt executable somewhere in PATH
 ```
 $ sudo apt-get install screen net-tools docker-compose
-$ sudo chown :docker /etc/hosts && chmod g=rw /etc/hosts
-$ echo "# DTUNHostsStart" >> /etc/hosts
-$ echo "# DTUNHostsEnd" >> /etc/hosts
+$ sudo dt dt-setup
 ```
-Adjusts paths in dt executable file to point to your projects dir and to installation path of DTUN
-(default /opt/dt and /projects)
+Adjust paths in dt executable file to point to your projects dir and to installation path of DTUN using env variables:
+
+```
+DTUN_HOME=/opt/dt
+DTUN_PROJECTS=/projects
+DTUN_EXT_INTERFACE=eth0 # only needed when reverse proxy is used
+DTUN_USE_REVERSE_PROXY=1 # uses apache2 as reverse proxy
+```
 
 ## Usage
 
