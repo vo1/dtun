@@ -13,7 +13,9 @@ Adjusts paths in dt executable file to point to your projects dir and to install
 
 ## Usage
 
-**dt projectname init** - initializes docker project in $DTUNHome/data (apachep-php7.1 & mysql-5.6)
+**dt dt-setup** - initializes dt, sets proper permissions, adding required lines to sudoers, etc
+
+**dt projectname init [--mysql=5.7] [--php=7.0]** - initializes docker project in $DTUNHome/data (defaults apache-php7.1 & mysql-5.6)
 
 **dt projectname start** - starts it
 

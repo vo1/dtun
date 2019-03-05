@@ -12,10 +12,15 @@ UseApacheReverseProxy=1
 ExternalIp=`ip -br -4 addr show $ExternalInterface|awk '{ split(\$3, m, "/"); print m[1] }'`
 env=$1
 cmd=$2
+params=""
 
 if [ -z $cmd ]; then
     cmd=$1
+else
+    shift 2
+    params=$@
 fi;
+
 # Finds first free IP in ListenIP zone
 findFreeIp()
 {
@@ -61,15 +66,31 @@ generatePhpConfig()
 # Initializes docker environment
 initializeDockerComposer()
 {
-    if [ -d $DockerHome/$1 ]; then
-	echo "Initializing docker environment for $DockerHome/$1 in $DockerComposeHome..."
-	mkdir -p $DockerComposeHome/$1/data/mysql $DockerComposeHome/$1/config $DockerComposeHome/$1/config/php $DockerComposeHome/$1/config/mysql
-	ln -f -s $DockerHome/$1 $DockerComposeHome/$1/data/html
-	generatePhpConfig $1 7.1
-	generateMysqlConfig $1 5.6
-	cat $DTUNHome/config/docker-compose.yml|envsubst>$DockerComposeHome/$1/docker-compose.yml
+    envName=$1
+    shift 1
+    ver_php=7.1
+    ver_mysql=5.6
+    for argument in $@; do
+	case $argument in 
+	    --mysql=*)
+		ver_mysql="${argument#*=}"
+		shift
+	    ;;
+	    --php=*)
+		ver_php="${argument#*=}"
+		shift
+	    ;;
+	esac;
+    done 
+    if [ -d $DockerHome/$envName ]; then
+	echo "Initializing docker environment for $DockerHome/$envName in $DockerComposeHome..."
+	mkdir -p $DockerComposeHome/$envName/data/mysql $DockerComposeHome/$envName/config $DockerComposeHome/$envName/config/php $DockerComposeHome/$envName/config/mysql
+	ln -f -s $DockerHome/$envName $DockerComposeHome/$envName/data/html
+	generatePhpConfig $envName $ver_php
+	generateMysqlConfig $envName $ver_mysql
+	cat $DTUNHome/config/docker-compose.yml|envsubst>$DockerComposeHome/$envName/docker-compose.yml
     else
-	echo "FATAL: $DockerHome/$1 not found"
+	echo "FATAL: $DockerHome/$envName not found"
     fi;
 }
 # Starts docker environment
@@ -179,7 +200,7 @@ case "$cmd" in
 	executeApp $env web /app php bin/magento setup:upgrade
     ;;
     init)
-	initializeDockerComposer $env
+	initializeDockerComposer $env $params
     ;;
     start)
 	startDockerEnvironment $env
