@@ -1,1 +1,0 @@
-FROM mysql:${MYSQL_VERSION}

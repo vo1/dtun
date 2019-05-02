@@ -51,29 +51,31 @@ generateEnvFile()
 {
     name=$1
     ip=$(findFreeIp)
+    uid=$(id -u)
+    gid=$(id -g)
     envFile=$DockerComposeHome/$name/.env
-    echo "PROJECT_NAME=$name">$envFile
-    echo "LISTEN_IP=$ip">>$envFile
-    echo "MAGENTO_MODE=developer">>$envFile
-    echo "MYSQL_ROOT_PASSWORD=root">>$envFile
-    echo "MYSQL_DATABASE=magento2">>$envFile
+    configFile=$DockerComposeHome/$name/.config
+    export LISTEN_IP=$ip USER_UID=$uid USER_GID=$gid && cat $configFile | envsubst > $envFile
 }
-# Generates MYSQL Config
-generateMysqlConfig()
+# Generates .config file
+generateConfigFile()
 {
     name=$1
-    version=$2
-    export MYSQL_VERSION=$version && cat $DTUNHome/config/mysql/Dockerfile|envsubst>$DockerComposeHome/$name/config/mysql/Dockerfile
-    cp $DTUNHome/config/mysql/base.yml $DockerComposeHome/$name/config/mysql/base.yml
+    ver_php=$2
+    ver_mysql=$3
+    config=$DockerComposeHome/$name/.config
+    echo "# Build-only arguments">$config
+    echo "PROJECT_NAME=$name">>$config
+    echo "PHP_VERSION=$ver_php">>$config
+    echo "MYSQL_VERSION=$ver_mysql">>$config
+    echo "MYSQL_ROOT_PASSWORD=root">>$config
+    echo "MYSQL_DATABASE=magento2">>$config
+    echo "# Run-only arguments">>$config
+    echo "LISTEN_IP=\${LISTEN_IP}">>$config
+    echo "USER_UID=\${USER_UID}">>$config
+    echo "USER_GID=\${USER_GID}">>$config
 }
-# Generates PHP Config
-generatePhpConfig()
-{
-    name=$1
-    dphpVersion=$2
-    export PHP_VERSION=$dphpVersion && cat $DTUNHome/config/php/Dockerfile|envsubst>$DockerComposeHome/$name/config/php/Dockerfile
-    cp $DTUNHome/config/php/base.yml $DockerComposeHome/$name/config/php/base.yml
-}
+
 # Initializes docker environment
 initializeDockerComposer()
 {
@@ -95,17 +97,20 @@ initializeDockerComposer()
     done 
     if [ -d $DockerHome/$envName ]; then
 	echo "Initializing docker environment for $DockerHome/$envName in $DockerComposeHome..."
-	mkdir -p $DockerComposeHome/$envName/data/mysql $DockerComposeHome/$envName/config $DockerComposeHome/$envName/config/php $DockerComposeHome/$envName/config/mysql
+	mkdir -p $DockerComposeHome/$envName/data/mysql $DockerComposeHome/$envName/config
+	find $DTUNHome/config -type d -links 2 -exec cp -r -t $DockerComposeHome/$envName/config {} +
+
 	if [ ! -e $DockerComposeHome/$envName/data/html ]; then
 	    ln -f -s $DockerHome/$envName $DockerComposeHome/$envName/data/html
 	fi;
-	generatePhpConfig $envName $ver_php
-	generateMysqlConfig $envName $ver_mysql
-	cat $DTUNHome/config/docker-compose.yml|envsubst>$DockerComposeHome/$envName/docker-compose.yml
+	cp $DTUNHome/config/docker-compose.yml $DockerComposeHome/$envName/docker-compose.yml
+	generateConfigFile $envName $ver_php $ver_mysql
+	generateEnvFile $envName
     else
 	echo "FATAL: $DockerHome/$envName not found"
     fi;
 }
+
 # Starts docker environment
 startDockerEnvironment()
 {
@@ -153,9 +158,17 @@ generateVHosts()
     list=$(eval $cmd)
     while read entry; do
 	name=`echo $entry|awk '{split($1, m, "-web"); print m[1]; }'`
-	export ENV_NAME=$name && cat $DTUNHome/config/php/vhost.conf|envsubst > /etc/apache2/sites-available/$name.conf
+	export PROJECT_NAME=$name && cat $DTUNHome/config/php/vhost.conf|envsubst > /etc/apache2/sites-available/$name.conf
 	sudo /usr/sbin/a2ensite $name
     done <<< "$list"
+}
+buildStyles()
+{
+    env=$1
+    dir=$DockerHome/$env/vendor/snowdog/frontools
+    if [ -d "$dir" ]; then
+	cd $dir && npm update && npm run setup && npm run clean && npm run styles
+    fi;
 }
 # Executes application on container
 executeApp()
@@ -167,8 +180,9 @@ executeApp()
     app=$@
     cid="docker ps --format {{.ID}} --filter name=$env-$cnt"
     cid=$($cid)
-    docker exec --workdir $chdir --user $(id -u) -ti $cid $app
+    docker exec --workdir $chdir --user app -ti $cid $app
 }
+
 # CMD switch
 case "$cmd" in
     dt-setup)
@@ -200,20 +214,45 @@ case "$cmd" in
 	    sudo service apache2 reload && echo Reloaded Apache2
 	fi;
     ;;
+    p)
+	sudo chown $(whoami):www-data -R $DockerHome/$env
+    ;;
+    styles)
+	cd $DockerHome/$env/vendor/snowdog/frontools && gulp styles
+    ;;
     mysql)
 	executeApp $env mysql /var/lib/mysql mysql -u root -proot magento2
     ;;
     bash)
-	executeApp $env web /app bash
+	executeApp $env web /var/www/html bash
     ;;
     mc)
-	executeApp $env web /app mc
+	executeApp $env web /var/www/html mc
     ;;
     m2)
-	executeApp $env web /app php bin/magento
+	executeApp $env web /var/www/html php bin/magento $params
+    ;;
+    idx)
+	executeApp $env web /var/www/html php bin/magento indexer:reindex
+    ;;
+    git)
+	cd $DockerHome/$env && git $params
+    ;;
+    composer)
+	executeApp $env web /var/www/html composer $params
+    ;;
+    ci)
+	executeApp $env web /var/www/html composer install -vvv
+    ;;
+    cu)
+	executeApp $env web /var/www/html composer update
     ;;
     up)
-	executeApp $env web /app php bin/magento setup:upgrade
+	executeApp $env web /var/www/html php bin/magento setup:upgrade
+	buildStyles $env
+    ;;
+    dep)
+	executeApp $env web /var/www/html php vendor/bin/dep $params
     ;;
     init)
 	initializeDockerComposer $env $params

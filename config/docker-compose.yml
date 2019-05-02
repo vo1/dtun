@@ -1,12 +1,33 @@
-version: '2'
+version: '3'
 services:
   db:
-    extends:
-      file: config/mysql/base.yml
-      service: db
+    container_name: ${PROJECT_NAME}-db
+    image: mysql:${MYSQL_VERSION}
+    volumes:
+      - ./data/mysql:/var/lib/mysql  # Link to your local database, it will be imported when running.
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "${LISTEN_IP}:3306:3306"
+
   web:
-    extends:
-      file: config/php/base.yml
-      service: web
-    links:
+    container_name: ${PROJECT_NAME}-web
+    ports:
+      - "${LISTEN_IP}:80:80"
+    cap_add:
+      - SYS_ADMIN
+    build:
+      context: config/php
+      args:
+        PHP_VERSION: ${PHP_VERSION}
+        USER_UID: ${USER_UID}
+        USER_GID: ${USER_GID}
+    sysctls:
+      - net.ipv4.ip_unprivileged_port_start=0
+    volumes:
+      - ./data/html:/var/www/html
+      - $HOME/.ssh:/var/www/.ssh
+      - $HOME/.gitconfig:/var/www/.gitconfig
+    depends_on:
       - db

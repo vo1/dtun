@@ -1,4 +1,7 @@
+ARG PHP_VERSION
 FROM php:${PHP_VERSION}-apache
+ARG USER_UID
+ARG USER_GID
 
 RUN a2enmod rewrite
 
@@ -19,8 +22,8 @@ RUN apt-get update && \
     libxslt1-dev \
     sudo
 
-RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ 
-
+RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/
+RUN docker-php-ext-configure mcrypt
 RUN docker-php-ext-install \ 
     intl \
     bcmath \
@@ -28,7 +31,10 @@ RUN docker-php-ext-install \
     gd \
     zip \
     pdo_mysql \
+    mcrypt \
     xsl
+
+RUN curl --silent --show-error https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 RUN yes | pecl install xdebug \
     && echo "zend_extension=$(find /usr/local/lib/php/extensions/ -name xdebug.so)" > /usr/local/etc/php/conf.d/xdebug.ini \
@@ -38,7 +44,11 @@ RUN yes | pecl install xdebug \
     && echo "xdebug.remote_log=/tmp/xdebug.log" >> /usr/local/etc/php/conf.d/xdebug.ini \
     && echo "xdebug.remote_autostart=off" >> /usr/local/etc/php/conf.d/xdebug.ini
 
-RUN curl --silent --show-error https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN ln -s /var/www/html /app && \
+    groupadd -g ${USER_GID} app && \
+    useradd -r -u ${USER_UID} -g app -d /var/www app && \
+    chown app:app /var/www
 
-RUN chown :www-data /var/www && chmod g=rwX /var/www 
-RUN sudo -u www-data composer global require hirak/prestissimo
+USER app
+
+RUN composer global require hirak/prestissimo
