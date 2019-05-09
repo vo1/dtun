@@ -200,7 +200,7 @@ case "$cmd" in
 	    chmod g=rwX /etc/apache2/sites-available /etc/apache2/ports.conf
 	    added=`cat /etc/sudoers|grep -e "%docker.*NOPASSWD.*apache2"`
 	    if [ -z "$added" ]; then
-		echo -e "\n# DTSudoersStart\n%docker ALL=NOPASSWD:/sbin/service apache2 reload\n%docker ALL=NOPASSWD:/usr/sbin/a2ensite \n# DTSudoersEnd\n">> /etc/sudoers
+		echo -e "\n# DTSudoersStart\n%docker ALL=NOPASSWD:/usr/sbin/apache2ctl restart\n%docker ALL=NOPASSWD:/usr/sbin/a2ensite \n# DTSudoersEnd\n">> /etc/sudoers
 	    fi;
 	fi; 
     ;;
@@ -214,7 +214,7 @@ case "$cmd" in
 	    echo Reverse proxy reconfiguration to $ExternalIp
 	    echo Listen $ExternalIp:80 >/etc/apache2/ports.conf
 	    generateVHosts
-	    sudo service apache2 reload && echo Reloaded Apache2
+	    sudo /usr/sbin/apache2ctl restart && echo Restarted Apache2
 	fi;
     ;;
     p)
