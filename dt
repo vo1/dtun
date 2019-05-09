@@ -116,7 +116,7 @@ startDockerEnvironment()
 {
     echo "Starting $1..."
     generateEnvFile $1
-    cd $DockerComposeHome/$1 && screen -dmS $1 docker-compose up --build
+    cd $DockerComposeHome/$1 && docker-compose up --build -d
 }
 # Stops docker environment
 stopDockerEnvironment()
@@ -185,6 +185,9 @@ executeApp()
 
 # CMD switch
 case "$cmd" in
+    attach)
+	cd $DockerComposeHome/$env && docker-compose logs --tail=5 -f
+    ;;
     dt-setup)
 	chown :docker /etc/hosts
 	chmod g=rw /etc/hosts
