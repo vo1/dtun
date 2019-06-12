@@ -49,6 +49,7 @@ RUN if [ "${IMAGE_PHP}" != "5.6" ]; then \
     echo "xdebug.remote_port=9000" >> /usr/local/etc/php/conf.d/xdebug.ini; \
     echo "xdebug.remote_log=/tmp/xdebug.log" >> /usr/local/etc/php/conf.d/xdebug.ini; \
     echo "xdebug.remote_autostart=off" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+    echo "memory_limit=-1" >> /usr/local/etc/php/conf.d/xdebug.ini; \
 fi;
 
 
