@@ -23,7 +23,8 @@ RUN apt-get update && \
     libxslt1-dev \
     sudo
 
-RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/
+RUN docker-php-ext-configure gd --with-gd --with-jpeg-dir --with-png-dir --with-zlib-dir --with-freetype-dir
+RUN docker-php-ext-install gd
 
 RUN if [ "${IMAGE_PHP}" != "7.2" ]; then \
     docker-php-ext-configure mcrypt; \
