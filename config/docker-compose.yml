@@ -11,6 +11,10 @@ services:
     ports:
       - "${LISTEN_IP}:3306:3306"
 
+  mail:
+    container_name: ${PROJECT_NAME}-mail
+    image: namshi/smtp
+
   web:
     container_name: ${PROJECT_NAME}-web
     ports:
@@ -31,3 +35,4 @@ services:
       - $HOME/.gitconfig:/var/www/.gitconfig
     depends_on:
       - db
+      - mail
