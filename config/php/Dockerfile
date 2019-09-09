@@ -21,7 +21,8 @@ RUN apt-get update && \
     zip \
     curl \
     libxslt1-dev \
-    libmagickwand-dev
+    libmagickwand-dev \
+    ssmtp
 
 RUN docker-php-ext-configure gd --with-gd --with-jpeg-dir --with-png-dir --with-zlib-dir --with-freetype-dir && docker-php-ext-install gd
 RUN pecl install imagick
