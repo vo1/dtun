@@ -21,19 +21,18 @@ RUN apt-get update && \
     zip \
     curl \
     libxslt1-dev \
-    libmagickwand-dev \
-    ssmtp
+    libmagickwand-dev
 
 RUN docker-php-ext-configure gd --with-gd --with-jpeg-dir --with-png-dir --with-zlib-dir --with-freetype-dir && docker-php-ext-install gd
 RUN pecl install imagick
 RUN docker-php-ext-enable imagick
 
-RUN echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf && \
-    echo 'sendmail_path = "/usr/sbin/ssmtp -t"' > /usr/local/etc/php/conf.d/mail.ini
-
 RUN if [ "${IMAGE_PHP}" != "7.2" ]; then \
+    apt-get install -y ssmtp; \
     docker-php-ext-configure mcrypt; \
     docker-php-ext-install mcrypt; \
+    echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf; \
+    echo 'sendmail_path = "/usr/sbin/ssmtp -t"' > /usr/local/etc/php/conf.d/mail.ini; \
 fi;
 
 RUN docker-php-ext-install \ 
