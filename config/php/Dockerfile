@@ -77,6 +77,4 @@ USER app
 
 RUN composer global require hirak/prestissimo
 
-FROM php:7.1-apache
-
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCROOT}!g' /etc/apache2/sites-available/*.conf
