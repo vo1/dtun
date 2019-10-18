@@ -70,6 +70,7 @@ generateConfigFile()
     echo "IMAGE_MYSQL=$ver_mysql">>$config
     echo "MYSQL_ROOT_PASSWORD=root">>$config
     echo "MYSQL_DATABASE=magento2">>$config
+    echo "APACHE_DOCROOT=/var/www/html/pub">>$config
     echo "# Run-only arguments">>$config
     echo "LISTEN_IP=\${LISTEN_IP}">>$config
     echo "USER_UID=\${USER_UID}">>$config
@@ -256,6 +257,9 @@ case "$cmd" in
     ;;
     dep)
 	executeApp $env web /var/www/html php vendor/bin/dep $params
+    ;;
+    cdc)
+	executeApp $env web /var/www/html vendor/bin/codecept $params
     ;;
     init)
 	initializeDockerComposer $env $params

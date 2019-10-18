@@ -4,6 +4,7 @@ FROM php:${IMAGE_PHP}-apache
 ARG IMAGE_PHP
 ARG USER_UID
 ARG USER_GID
+ARG APACHE_DOCROOT
 
 RUN a2enmod rewrite
 RUN apt-get update && \
@@ -75,3 +76,7 @@ RUN ln -s /var/www/html /app && \
 USER app
 
 RUN composer global require hirak/prestissimo
+
+FROM php:7.1-apache
+
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCROOT}!g' /etc/apache2/sites-available/*.conf

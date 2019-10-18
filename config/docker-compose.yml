@@ -27,6 +27,7 @@ services:
         IMAGE_PHP: ${IMAGE_PHP}
         USER_UID: ${USER_UID}
         USER_GID: ${USER_GID}
+        APACHE_DOCROOT: ${APACHE_DOCROOT}
     sysctls:
       - net.ipv4.ip_unprivileged_port_start=0
     volumes:
