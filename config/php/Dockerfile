@@ -73,8 +73,8 @@ RUN ln -s /var/www/html /app && \
     useradd -r -u ${USER_UID} -g app -d /var/www app && \
     chown app:app /var/www
 
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCROOT}!g' /etc/apache2/sites-available/*.conf
+
 USER app
 
 RUN composer global require hirak/prestissimo
-
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCROOT}!g' /etc/apache2/sites-available/*.conf
