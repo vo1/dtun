@@ -50,12 +50,13 @@ findFreeIp()
 generateEnvFile()
 {
     name=$1
+    xdebug=$2
     ip=$(findFreeIp)
     uid=$(id -u)
     gid=$(id -g)
     envFile=$DockerComposeHome/$name/.env
     configFile=$DockerComposeHome/$name/.config
-    export LISTEN_IP=$ip USER_UID=$uid USER_GID=$gid && cat $configFile | envsubst > $envFile
+    export XDEBUG=$xdebug LISTEN_IP=$ip USER_UID=$uid USER_GID=$gid && cat $configFile | envsubst > $envFile
 }
 # Generates .config file
 generateConfigFile()
@@ -74,6 +75,7 @@ generateConfigFile()
     echo "LISTEN_IP=\${LISTEN_IP}">>$config
     echo "USER_UID=\${USER_UID}">>$config
     echo "USER_GID=\${USER_GID}">>$config
+    echo "XDEBUG=\${XDEBUG}">>$config
 }
 
 # Initializes docker environment
@@ -97,13 +99,13 @@ initializeDockerComposer()
     done 
     if [ -d $DockerHome/$envName ]; then
 	echo "Initializing docker environment for $DockerHome/$envName in $DockerComposeHome..."
-	mkdir -p $DockerComposeHome/$envName/data/mysql $DockerComposeHome/$envName/config
-	find $DTUNHome/config -type d -links 2 -exec cp -r -t $DockerComposeHome/$envName/config {} +
+	mkdir -p $DockerComposeHome/$envName/data/mysql
 
 	if [ ! -e $DockerComposeHome/$envName/data/html ]; then
 	    ln -f -s $DockerHome/$envName $DockerComposeHome/$envName/data/html
 	fi;
-	cp $DTUNHome/config/docker-compose.yml $DockerComposeHome/$envName/docker-compose.yml
+	ln -f -s $DTUNHome/config $DockerComposeHome/$envName/config
+	ln -f -s $DockerComposeHome/$envName/config/docker-compose.yml $DockerComposeHome/$envName/docker-compose.yml
 	generateConfigFile $envName $ver_php $ver_mysql
 	generateEnvFile $envName
     else
@@ -114,8 +116,8 @@ initializeDockerComposer()
 # Starts docker environment
 startDockerEnvironment()
 {
-    echo "Starting $1..."
-    generateEnvFile $1
+    echo "Starting $1 (XDEBUG FLAG=\"$2\")..."
+    generateEnvFile $1 $2
     cd $DockerComposeHome/$1 && docker-compose up --build -d
 }
 # Stops docker environment
@@ -224,7 +226,7 @@ case "$cmd" in
 	cd $DockerHome/$env/vendor/snowdog/frontools && gulp styles
     ;;
     mysql)
-	executeApp $env mysql /var/lib/mysql mysql -u root -proot magento2
+	executeApp $env db /var/lib/mysql mysql -u root -proot magento2
     ;;
     bash)
 	executeApp $env web /var/www/html bash
@@ -264,7 +266,7 @@ case "$cmd" in
 	initializeDockerComposer $env $params
     ;;
     start)
-	startDockerEnvironment $env
+	startDockerEnvironment $env $params
     ;;
     stop)
 	stopDockerEnvironment $env

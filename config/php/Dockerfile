@@ -45,17 +45,19 @@ RUN docker-php-ext-install \
 
 RUN curl --silent --show-error https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-RUN if [ "${IMAGE_PHP}" != "5.6" ]; then \
-    yes | pecl install xdebug; \
-    echo "zend_extension=$(find /usr/local/lib/php/extensions/ -name xdebug.so)" > /usr/local/etc/php/conf.d/xdebug.ini; \
-    echo "xdebug.remote_enable=on" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-    echo "xdebug.remote_connect_back=on" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-    echo "xdebug.remote_port=9000" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-    echo "xdebug.remote_log=/tmp/xdebug.log" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-    echo "xdebug.remote_autostart=off" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-    echo "memory_limit=-1" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-fi;
+RUN echo "memory_limit=-1" >> /usr/local/etc/php/conf.d/memory.ini
 
+RUN if [ "${IMAGE_PHP}" != "5.6" ]; then \
+    if [ "${XDEBUG}" = "1" ]; then \
+        yes | pecl install xdebug; \
+        echo "zend_extension=$(find /usr/local/lib/php/extensions/ -name xdebug.so)" > /usr/local/etc/php/conf.d/xdebug.ini; \
+        echo "xdebug.remote_enable=on" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+        echo "xdebug.remote_connect_back=on" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+        echo "xdebug.remote_port=9000" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+        echo "xdebug.remote_log=/tmp/xdebug.log" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+        echo "xdebug.remote_autostart=off" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+    fi; \
+fi;
 
 RUN if [ "${IMAGE_PHP}" = "5.6" ]; then \
     docker-php-ext-install xml; \ 

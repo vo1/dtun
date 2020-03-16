@@ -11,9 +11,12 @@ services:
     ports:
       - "${LISTEN_IP}:3306:3306"
 
-  mail:
-    container_name: ${PROJECT_NAME}-mail
-    image: namshi/smtp
+#  mail:
+#    container_name: ${PROJECT_NAME}-mail
+#    image: namshi/smtp
+#  es:
+#    container_name: ${PROJECT_NAME}-es
+#    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.4
 
   web:
     container_name: ${PROJECT_NAME}-web
@@ -35,4 +38,5 @@ services:
       - $HOME/.gitconfig:/var/www/.gitconfig
     depends_on:
       - db
-      - mail
+#      - mail
+#      - es
