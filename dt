@@ -169,7 +169,7 @@ buildStyles()
     env=$1
     dir=$DockerHome/$env/vendor/snowdog/frontools
     if [ -d "$dir" ]; then
-	cd $dir && npm update && npm run setup && npm run clean && npm run styles
+	cd $dir && yarn install && yarn run setup && yarn run clean && yarn run styles
     fi;
 }
 # Executes application on container
@@ -250,7 +250,7 @@ case "$cmd" in
 	executeApp $env web /var/www/html composer install -vvv
     ;;
     cu)
-	executeApp $env web /var/www/html composer update
+	executeApp $env web /var/www/html composer update $params --ignore-platform-reqs
     ;;
     up)
 	executeApp $env web /var/www/html php bin/magento setup:upgrade

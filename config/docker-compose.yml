@@ -11,9 +11,9 @@ services:
     ports:
       - "${LISTEN_IP}:3306:3306"
 
-#  mail:
-#    container_name: ${PROJECT_NAME}-mail
-#    image: namshi/smtp
+  mail:
+    container_name: ${PROJECT_NAME}-mail
+    image: namshi/smtp
 #  es:
 #    container_name: ${PROJECT_NAME}-es
 #    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.4
@@ -33,6 +33,7 @@ services:
     sysctls:
       - net.ipv4.ip_unprivileged_port_start=0
     volumes:
+      - ./config/msmtp.conf:/etc/msmtp.conf
       - ./data/html:/var/www/html
       - $HOME/.ssh:/var/www/.ssh
       - $HOME/.gitconfig:/var/www/.gitconfig
