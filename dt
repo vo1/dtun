@@ -164,14 +164,6 @@ generateVHosts()
 	sudo /usr/sbin/a2ensite $name
     done <<< "$list"
 }
-buildStyles()
-{
-    env=$1
-    dir=$DockerHome/$env/vendor/snowdog/frontools
-    if [ -d "$dir" ]; then
-	cd $dir && yarn install && yarn run setup && yarn run clean && yarn run styles
-    fi;
-}
 # Executes application on container
 executeApp()
 {
@@ -226,7 +218,7 @@ case "$cmd" in
 	cd $DockerHome/$env/vendor/snowdog/frontools && gulp styles
     ;;
     mysql)
-	executeApp $env db /var/lib/mysql mysql -u root -proot magento2
+	executeApp $env web / mysql -u root -proot magento2 -hdb
     ;;
     bash)
 	executeApp $env web /var/www/html bash
@@ -254,7 +246,9 @@ case "$cmd" in
     ;;
     up)
 	executeApp $env web /var/www/html php bin/magento setup:upgrade
-	buildStyles $env
+	executeApp $env web /var/www/html/vendor/snowdog/frontools yarn 
+	executeApp $env web /var/www/html/vendor/snowdog/frontools yarn setup
+	executeApp $env web /var/www/html/vendor/snowdog/frontools yarn styles
     ;;
     dep)
 	executeApp $env web /var/www/html php vendor/bin/dep $params
