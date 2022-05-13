@@ -218,7 +218,7 @@ case "$cmd" in
 	cd $DockerHome/$env/vendor/snowdog/frontools && gulp styles
     ;;
     mysql)
-	executeApp $env web / mysql -u root -proot magento2 -hdb
+	cd $DockerComposeHome/$env && docker-compose exec db mysql -proot magento2
     ;;
     bash)
 	executeApp $env web /var/www/html bash
