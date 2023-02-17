@@ -59,16 +59,20 @@ RUN pecl install -f redis
 RUN docker-php-ext-enable redis
 
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
-RUN curl --silent --show-error https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=1.10.20
+
+#RUN if [ "${IMAGE_PHP}" != "8.1" ]; then \
+#    curl --silent --show-error https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=1.10.20; \
+#fi;
+
+#RUN if [ "${IMAGE_PHP}" = "8.1" ]; then \
+#fi;
+
 RUN curl -sS -O https://files.magerun.net/n98-magerun2-latest.phar && curl -sS -o n98-magerun2-latest.phar.sha256 https://files.magerun.net/sha256.php?file=n98-magerun2-latest.phar && shasum -a 256 -c n98-magerun2-latest.phar.sha256 && chmod +x ./n98-magerun2-latest.phar && cp ./n98-magerun2-latest.phar /usr/local/bin/magerun2
 RUN apt -y install nodejs
 RUN npm install -g yarn
 
 RUN echo "memory_limit=-1" >> /usr/local/etc/php/conf.d/memory.ini
 
-RUN if [ "${IMAGE_PHP}" != "5.6" ]; then \
-    yes | pecl install xdebug-2.9.2; \
-fi;
 
 RUN if [ "${IMAGE_PHP}" = "5.6" ]; then \
     docker-php-ext-install xml; \ 
@@ -81,27 +85,47 @@ RUN if [ "${IMAGE_PHP}" = "5.6" ]; then \
 fi;
 
 
-RUN if [ "${IMAGE_PHP}" != "7.4" ]; then \
+RUN if [ "${IMAGE_PHP}" != "7.4" ] && [ "${IMAGE_PHP}" != "8.1" ]; then \
     docker-php-ext-configure gd --with-gd --with-jpeg-dir --with-png-dir --with-zlib-dir --with-freetype-dir && docker-php-ext-install gd; \
 fi;
 
-RUN if [ "${IMAGE_PHP}" = "7.4" ]; then \
+RUN if [ "${IMAGE_PHP}" = "7.4" ] || [ "${IMAGE_PHP}" = "8.1" ]; then \
     docker-php-ext-configure gd --with-freetype --with-jpeg; \
     docker-php-ext-install gd; \
 fi;
 
+RUN if [ "${IMAGE_PHP}" = "7.3" ]; then \
+    pecl install pcov; \
+    docker-php-ext-enable pcov; \
+fi;
+
+RUN a2enmod proxy_http
+RUN echo "    ForwardAgent yes" >> /etc/ssh/ssh_config
 
 #RUN sed -ri -e 's!/var/www/html!/var/www/html/pub!g' /etc/apache2/sites-available/*.conf
 #RUN apt install -y mariadb-client-core
+RUN if [ "${IMAGE_PHP}" = "8.1" ] || [ "${IMAGE_PHP}" = "7.4" ]; then \
+    yes | pecl install xdebug-3.1.5; \
+    echo "zend_extension=xdebug.so" > /usr/local/etc/php/conf.d/xdebug.ini; \
+    echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+    echo "xdebug.start_with_request=debug" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+    echo "xdebug.client_host=10.10.10.10" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+    echo "xdebug.client_port=9000" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+fi;
 
-#RUN echo "zend_extension=xdebug.so" > /usr/local/etc/php/conf.d/xdebug.ini; \
-#    echo "xdebug.remote_enable=on" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-#    echo "xdebug.remote_connect_back=on" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-#    echo "xdebug.remote_port=9000" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-#    echo "xdebug.remote_log=/tmp/xdebug.log" >> /usr/local/etc/php/conf.d/xdebug.ini; \
-#    echo "xdebug.remote_autostart=off" >> /usr/local/etc/php/conf.d/xdebug.ini;
+#RUN ssh-add -K
 
-RUN a2enmod proxy_http
+RUN curl --silent --show-error https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=2.2.10;
 
 USER app
-RUN composer global require hirak/prestissimo
+
+# RUN eval `ssh-agent -s` && ssh-add
+
+#RUN if [ "${IMAGE_PHP}" != "8.1" ]; then \
+#    composer global require hirak/prestissimo; \
+#fi;
+
+#RUN composer global require squizlabs/php_codesniffer
+#RUN composer global require phpmd/phpmd
+#RUN composer global require phpstan/phpstan
+ENV PATH="${PATH}:/var/www/html/vendor/bin"
