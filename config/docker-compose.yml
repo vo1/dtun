@@ -36,6 +36,7 @@ services:
     container_name: ${PROJECT_NAME}-web
     ports:
       - "80:80"
+      - "443:443"
     cap_add:
       - SYS_ADMIN
     build:
@@ -44,6 +45,7 @@ services:
         IMAGE_PHP: ${IMAGE_PHP}
         USER_UID: ${USER_UID}
         USER_GID: ${USER_GID}
+        NODE_VERSION: ${NODE_VERSION}
     sysctls:
       - net.ipv4.ip_unprivileged_port_start=0
     volumes:

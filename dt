@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ListenIP=127.0.33.
+ListenIP=127.0.0.
 DockerHome=/projects
 DTUNHome=/opt/dt
 DockerComposeHome=$DTUNHome/data
@@ -71,6 +71,7 @@ generateConfigFile()
     echo "IMAGE_MYSQL=$ver_mysql">>$config
     echo "MYSQL_ROOT_PASSWORD=root">>$config
     echo "MYSQL_DATABASE=magento2">>$config
+    echo "NODE_VERSION=14.17.0">>$config
     echo "# Run-only arguments">>$config
     echo "LISTEN_IP=\${LISTEN_IP}">>$config
     echo "USER_UID=\${USER_UID}">>$config
@@ -215,7 +216,7 @@ case "$cmd" in
 	sudo chown $(whoami):www-data -R $DockerHome/$env
     ;;
     styles)
-	cd $DockerHome/$env/vendor/snowdog/frontools && gulp styles
+	cd $DockerHome/$env/vendor/snowdog/frontools && yarn styles
     ;;
     mysql)
 	cd $DockerComposeHome/$env && docker-compose exec db mysql -proot magento2
